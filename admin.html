@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Panel Administrador | Aliado</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    body { background-color: #f4f6f9; }
+    .header-app { background: linear-gradient(135deg, #3f2b6e 0%, #2a1b4e 100%) !important; color: white; padding: 2rem 0; }
+    .top-banner { background-color: #ffffff; padding: 15px 0; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05); position: relative; z-index: 10; border-bottom: 3px solid #d4ff00; }
+    .top-banner img { height: 60px; object-fit: contain; }
+    .footer-empresa { background-color: #f8f9fa; text-align: center; padding: 30px 15px; margin-top: 60px; color: #3f2b6e; }
+    .footer-logo { height: 50px; margin-bottom: 10px; object-fit: contain; }
+    .admin-card { background: white; border-radius: 10px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; border-top: 4px solid #3f2b6e; }
+  </style>
+</head>
+<body>
+  <!-- BANNER SUPERIOR -->
+  <div class="top-banner">
+    <img src="anuncio.png" alt="Anuncio">
+  </div>
+  <div class="header-app text-center"><h2>⚙️ Panel de Control Aliado</h2></div>
+  
+  <div class="container mt-5" style="max-width: 500px;" id="loginArea">
+    <div class="card p-4 shadow-sm text-center">
+      <h5 class="mb-3">Acceso Administrador</h5>
+      <input type="password" id="adminPass" class="form-control mb-3 text-center" placeholder="Contraseña Maestra">
+      <button class="btn btn-dark w-100 fw-bold" onclick="ingresarAdmin()">Ingresar al Panel</button>
+    </div>
+  </div>
+  <div class="container mt-4 d-none" style="max-width: 800px;" id="adminPanel">
+    <div class="row">
+      <!-- SINCRONIZAR -->
+      <div class="col-md-12">
+        <div class="admin-card border-warning">
+          <h5 class="text-warning fw-bold mb-3">1. Sincronización Pública (Firebase)</h5>
+          <p class="text-muted small">Usa este botón cuando actualices partidos en tu Excel para enviarlos a la plataforma del público.</p>
+          <button class="btn btn-warning w-100 fw-bold shadow-sm py-2" onclick="sincronizarPartidos()">
+            🔄 Sincronizar Partidos a la Nube
+          </button>
+        </div>
+      </div>
+      <!-- NUEVO VIP -->
+      <div class="col-md-6">
+        <div class="admin-card border-success">
+          <h5 class="text-success fw-bold mb-3">2. Nuevo Usuario VIP</h5>
+          <input type="text" id="nuevoNombre" class="form-control mb-2" placeholder="Nombre del participante">
+          <input type="text" id="nuevaClave" class="form-control mb-3" placeholder="Clave de acceso">
+          <button class="btn btn-success w-100 fw-bold" onclick="crearVIP()">Crear VIP</button>
+        </div>
+      </div>
+      <!-- CIERRE DE JORNADA (AHORA CON MENÚ DESPLEGABLE) -->
+      <div class="col-md-6">
+        <div class="admin-card border-danger">
+          <h5 class="text-danger fw-bold mb-3">3. Cierre de Jornada</h5>
+          <select id="selectJornadaCierre" class="form-select mb-2">
+             <option value="">-- Cargando Jornadas... --</option>
+          </select>
+          <input type="datetime-local" id="inputFechaCierre" class="form-control mb-3">
+          <button class="btn btn-danger w-100 fw-bold" onclick="establecerCierre()">🔒 Bloquear Pronósticos</button>
+        </div>
+      </div>
+      <!-- MÓDULO 4: CALCULAR PUNTAJES -->
+      <div class="col-md-12">
+        <div class="admin-card border-primary">
+          <h5 class="text-primary fw-bold mb-3">4. Calcular Puntajes</h5>
+          <p class="text-muted small">Haz clic aquí después de llenar los resultados reales en Excel. Este botón calculará los puntos de todos los usuarios en Firebase basados en tu hoja de Configuración.</p>
+          <button class="btn btn-primary w-100 fw-bold shadow-sm py-2" onclick="calcularPuntosFirebase()">
+            🏆 Calcular Puntos y Actualizar Tabla
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="text-center mt-3"><button class="btn btn-outline-secondary" onclick="location.reload()">Salir del Panel</button></div>
+  </div>
+  <footer class="footer-empresa text-center">
+    <p class="mb-2 text-muted fw-bold" style="font-size: 0.85rem;">Desarrollado por:</p>
+    <img src="logo2.png" alt="Aliado" class="footer-logo d-block mx-auto mb-2">
+    <a href="https://wa.me/51993801594" target="_blank" class="text-decoration-none fw-bold d-inline-block mt-1" style="color: #25D366; font-size: 0.95rem;">
+      💬 WhatsApp: +51 993 801 594
+    </a>
+  </footer>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
+    import { getFirestore, doc, setDoc, collection, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+    // LLAVES DE FIREBASE ALIADO
+    const firebaseConfig = {
+      apiKey: "AIzaSyDl95kPyGtbK5_6PP7i-joBS7fXY2BLXYg",
+      authDomain: "liga-pronosticos-aliado.firebaseapp.com",
+      projectId: "liga-pronosticos-aliado",
+      storageBucket: "liga-pronosticos-aliado.firebasestorage.app",
+      messagingSenderId: "819793391221",
+      appId: "1:819793391221:web:eb5cd4aa68938d9d13523c"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    // RECUERDA PONER TU URL DE APPS SCRIPT AQUÍ:
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzDQRJoNBzQG63to2JDb8P6nvko6ZaRBTrVpQGu554xG_COXYkmVewDfJDx76RBoE9oow/exec";
+    
+    let globalPass = "";
+    async function callAPI(accion, params = {}) {
+      const res = await fetch(SCRIPT_URL, {
+        method: 'POST', redirect: 'follow',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ accion: accion, params: params })
+      });
+      const json = await res.json();
+      if (json.status === "error") throw new Error(json.message);
+      return json.data;
+    }
+    window.ingresarAdmin = async () => {
+      let pass = document.getElementById('adminPass').value;
+      if(!pass) return Swal.fire('Error', 'Ingresa la contraseña', 'warning');
+      Swal.fire({title: 'Verificando...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+      try {
+        await callAPI("verificarAdminAPI", {password: pass});
+        globalPass = pass;
+        let jornadas = await callAPI("getJornadasAPI");
+        let selectJor = document.getElementById('selectJornadaCierre');
+        selectJor.innerHTML = '<option value="">-- Selecciona la Jornada --</option>';
+        jornadas.forEach(j => { selectJor.innerHTML += `<option value="${j}">${j}</option>`; });
+        
+        Swal.close();
+        document.getElementById('loginArea').classList.add('d-none');
+        document.getElementById('adminPanel').classList.remove('d-none');
+      } catch (err) { Swal.fire('Atención', err.message, 'error'); }
+    };
+    window.crearVIP = async () => {
+      let n = document.getElementById('nuevoNombre').value.trim();
+      let c = document.getElementById('nuevaClave').value.trim();
+      if(!n || !c) return Swal.fire('Atención', 'Completa nombre y clave', 'warning');
+      
+      Swal.fire({title: 'Creando VIP en la Nube...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+      
+      try {
+        // 1. Creamos un ID único para el VIP (ej. VIP_4829)
+        let vipId = "VIP_" + Math.floor(1000 + Math.random() * 9000);
+        
+        // 2. Lo guardamos directo en Firebase
+        await setDoc(doc(db, "usuarios", vipId), {
+          id: vipId,
+          nombre: n,
+          nick: n,
+          clave: c,
+          rol: "VIP",
+          puntos: 0,
+          exactos: 0,
+          aciertosGanador: 0
+        });
+        // 3. (Opcional) Lo anotamos también en tu Excel como respaldo
+        await callAPI("registrarParticipanteAPI", {password: globalPass, nombre: n, clave: c, tipo: "VIP"});
+        document.getElementById('nuevoNombre').value = "";
+        document.getElementById('nuevaClave').value = "";
+        Swal.fire({ icon: 'success', title: '¡VIP Creado!', text: `${n} ya puede ingresar en vip.html`, timer: 2000, showConfirmButton: false });
+      } catch (err) {
+        Swal.fire('Error', err.message, 'error');
+      }
+    };
+    window.establecerCierre = async () => {
+      let j = document.getElementById('selectJornadaCierre').value;
+      let f = document.getElementById('inputFechaCierre').value;
+      if(!j || !f) return Swal.fire({ icon: 'warning', text: 'Selecciona la jornada y la fecha límite.' });
+      
+      Swal.fire({ title: 'Programando cierre...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+      try {
+        // 1. Guardar en Google Sheets (como antes)
+        let res = await callAPI("guardarCierreAPI", {password: globalPass, jornada: j, fecha: f});
+        
+        // 2. NUEVO: Guardar la fecha/hora límite directamente en Firebase
+        await setDoc(doc(db, "cierres", j), {
+          jornada: j,
+          fechaLimite: f
+        });
+        Swal.fire({ icon: 'success', title: '¡Cierre Programado!', text: `${res} (Sincronizado en la Nube)`, timer: 2200, showConfirmButton: false });
+      } catch (err) {
+        Swal.fire('Error', err.message, 'error');
+      }
+    };
+    window.sincronizarPartidos = async () => {
+      Swal.fire({title: 'Leyendo Excel...', text: 'Obteniendo partidos...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+      try {
+        const partidos = await callAPI("getPartidosParaJugadoresAPI");
+        if(partidos.length === 0) return Swal.fire('Atención', 'No hay partidos pendientes para sincronizar.', 'warning');
+        
+        Swal.fire({title: 'Subiendo a Firebase...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+        const promesas = partidos.map(p => {
+          const docRef = doc(db, "partidos", String(p.id).trim());
+          // Usamos merge: true para no borrar goles reales si ya existían
+          return setDoc(docRef, { 
+            id: String(p.id).trim(), 
+            jornada: p.jornada, 
+            local: p.local, 
+            visita: p.visita, 
+            bloqueado: p.bloqueado 
+          }, { merge: true });
+        });
+        await Promise.all(promesas);
+        Swal.fire('¡Éxito!', `Se sincronizaron los partidos a la Nube correctamente.`, 'success');
+      } catch (error) { Swal.fire('Error', error.message, 'error'); }
+    };
+    window.calcularPuntosFirebase = async () => {
+       Swal.fire({title: 'Analizando Excel...', text: 'Leyendo resultados y configuración...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+       try {
+          const datosExcel = await callAPI("obtenerResultadosYReglasAPI", {password: globalPass});
+          const reglas = datosExcel.reglas;
+          const resultadosReales = datosExcel.resultados;
+          
+          if(Object.keys(resultadosReales).length === 0) {
+             return Swal.fire('Aviso', 'Aún no hay partidos marcados como "Finalizado" en el Excel.', 'warning');
+          }
+          Swal.fire({title: 'Actualizando Nube...', text: 'Guardando resultados reales y calculando puntajes...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+          let promesasUpdate = [];
+          // 1. Guardar las reglas actuales en Firebase
+          promesasUpdate.push(setDoc(doc(db, "configuracion", "reglas"), reglas));
+          // 2. Guardar los goles reales en cada partido dentro de Firebase (usando setDoc + merge para que nunca falle)
+          for (let pid in resultadosReales) {
+             let cleanId = String(pid).trim();
+             promesasUpdate.push(setDoc(doc(db, "partidos", cleanId), {
+                id: cleanId,
+                golesLocalReal: Number(resultadosReales[pid].golesLocal),
+                golesVisitaReal: Number(resultadosReales[pid].golesVisita),
+                estado: "Finalizado",
+                bloqueado: true
+             }, { merge: true }));
+          }
+          // 3. Traer todos los usuarios y calcular sus puntos
+          const usuariosSnap = await getDocs(collection(db, "usuarios"));
+          for(let userDoc of usuariosSnap.docs) {
+             let uid = userDoc.id;
+             let ptsTotales = 0; let exactos = 0; let ganadores = 0;
+             const pronosSnap = await getDocs(collection(db, "usuarios", uid, "pronosticos"));
+             
+             pronosSnap.forEach(prDoc => {
+                let pr = prDoc.data();
+                let pid = String(pr.partidoId).trim();
+                
+                if(resultadosReales[pid]) {
+                   let realGL = Number(resultadosReales[pid].golesLocal);
+                   let realGV = Number(resultadosReales[pid].golesVisita);
+                   let prGL = Number(pr.golesLocal);
+                   let prGV = Number(pr.golesVisita);
+                   
+                   // LÓGICA DE PUNTUACIÓN ACTUALIZADA (3 - 2 - 1)
+                   if (prGL === realGL && prGV === realGV) {
+                      // RESULTADO EXACTO (3 puntos o el valor que tengas en el Excel)
+                      ptsTotales += reglas.exacto || 3; 
+                      exactos++;
+                   } else if ((realGL - realGV) === (prGL - prGV)) {
+                      // DIFERENCIA DE GOLES CORRECTA (2 puntos)
+                      // *Nota: Asegúrate de tener "diferencia" como regla en tu Excel o Apps Script, 
+                      // si no, tomará 2 puntos por defecto.
+                      ptsTotales += reglas.diferencia || 2; 
+                   } else if ((realGL > realGV && prGL > prGV) || (realGL < realGV && prGL < prGV) || (realGL === realGV && prGL === prGV)) {
+                      // ACIERTO DE GANADOR/EMPATE (1 punto o el valor en Excel)
+                      ptsTotales += reglas.ganador || 1; 
+                      ganadores++;
+                   }
+                }
+             });
+             promesasUpdate.push(updateDoc(doc(db, "usuarios", uid), {
+                puntos: ptsTotales,
+                exactos: exactos,
+                aciertosGanador: ganadores
+             }));
+          }
+          
+          await Promise.all(promesasUpdate);
+          Swal.fire('¡Éxito Total!', 'Resultados reales subidos y puntajes actualizados en la Nube.', 'success');
+          
+       } catch(err) {
+          Swal.fire('Error', err.message, 'error');
+       }
+    };
+  </script>
+</body>
+</html>

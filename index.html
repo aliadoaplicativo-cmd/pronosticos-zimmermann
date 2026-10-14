@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Clasificación | Aliado</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    /* El overflow-x: hidden evita el espacio blanco en celulares */
+    body { background-color: #f4f6f9; overflow-x: hidden; width: 100%; }
+    .header-app { background: linear-gradient(135deg, #3f2b6e 0%, #2a1b4e 100%) !important; color: white; padding: 2rem 0; }
+    .top-banner { background-color: #ffffff; padding: 15px 0; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05); position: relative; z-index: 10; border-bottom: 3px solid #d4ff00; }
+    /* max-width: 100% evita que el banner rompa la pantalla */
+    .top-banner img { height: 60px; max-width: 100%; object-fit: contain; }
+    .table-container { background: white; border-radius: 10px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-top: -30px; position: relative; z-index: 20; }
+    .vip-badge { font-size: 0.75rem; background: #ffd700; color: #000; padding: 3px 8px; border-radius: 12px; margin-left: 5px; font-weight: bold;}
+    .clickable-row { cursor: pointer; transition: background 0.2s; }
+    .clickable-row:hover { background-color: #e2e8f0 !important; }
+    .stat-card { border-radius: 10px; padding: 15px; text-align: center; }
+    .footer-empresa { background-color: #f8f9fa; text-align: center; padding: 30px 15px; margin-top: 60px; color: #3f2b6e; }
+    /* Protegemos también el logo inferior */
+    .footer-logo { height: 50px; max-width: 100%; margin-bottom: 10px; object-fit: contain; }
+  </style>
+</head>
+<body>
+  <div class="top-banner">
+    <img src="anuncio.png" alt="Anuncio">
+  </div>
+  
+  <div class="header-app text-center">
+    <h2>🏆 Liga de Pronósticos</h2>
+    <p>Haz clic en un participante para ver su rendimiento detallado</p>
+  </div>
+ 
+  <div class="container table-container" style="max-width: 900px;">
+    <!-- FILTROS JORNADA Y TIPO -->
+    <div class="row g-2 mb-3 align-items-center">
+      <div class="col-md-4"><h4 class="m-0 text-dark fw-bold pt-1">Clasificación</h4></div>
+      <div class="col-md-4">
+        <select id="filtroJornada" class="form-select fw-bold border-secondary shadow-sm" onchange="cargarTabla()">
+          <option value="Todas">📅 Todas las fechas</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <select id="filtroTipo" class="form-select fw-bold bg-light shadow-sm" onchange="cargarTabla()">
+          <option value="Todos">🌍 General (Todos)</option>
+          <option value="VIP">👑 Solo VIP</option>
+          <option value="Público">👥 Solo Público</option>
+        </select>
+      </div>
+    </div>
+    
+    <div id="loader" class="text-center my-5"><div class="spinner-border text-primary" role="status"></div></div>
+   
+    <div class="table-responsive border-0">
+      <table class="table table-hover d-none mt-3 align-middle" id="tablaPosiciones">
+        <thead class="table-dark">
+          <tr>
+            <th class="text-center">Pos</th>
+            <th>Participante</th>
+            <th class="text-center">Puntos</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyPosiciones"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- MODAL DASHBOARD DEL PARTICIPANTE -->
+  <div class="modal fade" id="modalDashboard" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header header-app text-white border-0 py-3">
+          <h5 class="modal-title fw-bold" id="modalTitle">Desglose de Rendimiento</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body bg-light p-4">
+          
+          <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+            <h3 class="m-0 fw-bold text-dark" id="dashNombre">Participante</h3>
+            <select id="filtroModal" class="form-select w-auto border-primary fw-bold shadow-sm" onchange="cargarDashboard()">
+              <option value="Todas">Todas las fechas</option>
+            </select>
+          </div>
+          
+          <div id="loaderModal" class="text-center my-5"><div class="spinner-border text-primary"></div></div>
+         
+          <div id="dashboardContent" class="d-none">
+            
+            <!-- TARJETAS DE ACIERTOS (NUEVO DISEÑO COLORIDO 4 COLUMNAS) -->
+            <div class="row g-2 mb-4">
+              <div class="col-6 col-md-3">
+                <div class="stat-card bg-success text-white shadow-sm p-2">
+                  <h3 class="text-white m-0 fw-bold" id="statExactos">0</h3>
+                  <small class="text-white-50 fw-bold d-block mt-1" style="font-size:0.75rem;">Exactos<br>(3 pts)</small>
+                </div>
+              </div>
+              <div class="col-6 col-md-3">
+                <div class="stat-card bg-info text-dark shadow-sm p-2">
+                  <h3 class="text-dark m-0 fw-bold" id="statDiferencia">0</h3>
+                  <small class="text-dark-50 fw-bold d-block mt-1" style="font-size:0.75rem;">Diferencia<br>(2 pts)</small>
+                </div>
+              </div>
+              <div class="col-6 col-md-3">
+                <div class="stat-card bg-warning text-dark shadow-sm p-2">
+                  <h3 class="text-dark m-0 fw-bold" id="statTendencia">0</h3>
+                  <small class="text-dark-50 fw-bold d-block mt-1" style="font-size:0.75rem;">Ganador<br>(1 pt)</small>
+                </div>
+              </div>
+              <div class="col-6 col-md-3">
+                <div class="stat-card bg-primary text-white shadow p-2">
+                  <h3 class="m-0 fw-bold text-white" id="statTotal">0</h3>
+                  <small class="fw-bold d-block mt-1 text-white-50" style="font-size:0.75rem;">Puntos<br>Totales</small>
+                </div>
+              </div>
+            </div>
+            
+            <h6 class="fw-bold text-secondary mb-3">Historial de Pronósticos</h6>
+            <div class="table-responsive shadow-sm rounded">
+              <table class="table table-bordered bg-white text-center align-middle mb-0">
+                <thead class="table-light text-secondary">
+                  <tr><th class="text-start">Partido</th><th>Su Pronóstico</th><th>Resultado Real</th><th>Pts</th></tr>
+                </thead>
+                <tbody id="tbodyHistorial"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <footer class="footer-empresa text-center">
+    <p class="mb-2 text-muted fw-bold" style="font-size: 0.85rem;">Desarrollado por:</p>
+    <img src="logo2.png" alt="Aliado" class="footer-logo d-block mx-auto mb-2">
+    <a href="https://wa.me/51993801594" target="_blank" class="text-decoration-none fw-bold d-inline-block mt-1" style="color: #25D366; font-size: 0.95rem;">
+      💬 WhatsApp: +51 993 801 594
+    </a>
+  </footer>
+  
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <!-- SCRIPT CONEXIÓN DIRECTA A FIREBASE -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
+    import { getFirestore, doc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+    
+    // Tus llaves de Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyDl95kPyGtbK5_6PP7i-joBS7fXY2BLXYg",
+      authDomain: "liga-pronosticos-aliado.firebaseapp.com",
+      projectId: "liga-pronosticos-aliado",
+      storageBucket: "liga-pronosticos-aliado.firebasestorage.app",
+      messagingSenderId: "819793391221",
+      appId: "1:819793391221:web:eb5cd4aa68938d9d13523c"
+    };
+    
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    
+    let todosLosPartidos = [];
+    window.currentPartId = null;
+
+    // 1. Cargar la página y las jornadas
+    window.onload = async function() {
+      try {
+        const querySnapshot = await getDocs(collection(db, "partidos"));
+        let jornadasSet = new Set();
+        querySnapshot.forEach((docSnap) => {
+          let p = docSnap.data();
+          todosLosPartidos.push(p);
+          jornadasSet.add(p.jornada);
+        });
+        
+        let jornadas = Array.from(jornadasSet).sort((a, b) => a.localeCompare(b, undefined, {numeric: true}));
+        let selectPrin = document.getElementById('filtroJornada');
+        let selectMod = document.getElementById('filtroModal');
+        jornadas.forEach(j => {
+          selectPrin.innerHTML += `<option value="${j}">${j}</option>`;
+          selectMod.innerHTML += `<option value="${j}">${j}</option>`;
+        });
+        
+        window.cargarTabla();
+      } catch (e) {
+        console.error("Error", e);
+      }
+    };
+    
+    // 2. Pintar la tabla principal
+    window.cargarTabla = async function() {
+      let jor = document.getElementById('filtroJornada').value;
+      let tip = document.getElementById('filtroTipo').value;
+      
+      document.getElementById('loader').classList.remove('d-none');
+      document.getElementById('tablaPosiciones').classList.add('d-none');
+      
+      try {
+        const usuariosSnap = await getDocs(collection(db, "usuarios"));
+        let data = [];
+        
+        for (let docSnap of usuariosSnap.docs) {
+           let u = docSnap.data();
+           
+           if(tip === "Todos" || u.rol === tip || (tip==="Público" && u.rol!=="VIP")) {
+               
+               let puntosMostrar = 0;
+               
+               if (jor === "Todas") {
+                   puntosMostrar = u.puntos || 0;
+               } else {
+                   const pronosSnap = await getDocs(collection(db, "usuarios", u.id, "pronosticos"));
+                   let ptsJornada = 0;
+                   
+                   pronosSnap.forEach(prDoc => {
+                       let pr = prDoc.data();
+                       let p = todosLosPartidos.find(part => part.id === pr.partidoId);
+                       
+                       if (p && p.jornada === jor && p.estado === "Finalizado") {
+                           let prGL = Number(pr.golesLocal);
+                           let prGV = Number(pr.golesVisita);
+                           let realGL = Number(p.golesLocalReal);
+                           let realGV = Number(p.golesVisitaReal);
+                           
+                           if (prGL === realGL && prGV === realGV) ptsJornada += 3;
+                           else if ((realGL - realGV) === (prGL - prGV)) ptsJornada += 2;
+                           else if ((realGL > realGV && prGL > prGV) || (realGL < realGV && prGL < prGV) || (realGL === realGV && prGL === prGV)) ptsJornada += 1;
+                       }
+                   });
+                   puntosMostrar = ptsJornada;
+               }
+               
+               data.push({
+                   id: u.id,
+                   nombre: u.nombre || u.nick,
+                   puntos: puntosMostrar,
+                   tipo: u.rol || "Público"
+               });
+           }
+        }
+        
+        data.sort((a, b) => b.puntos - a.puntos);
+        data.forEach((row, index) => row.rank = index + 1);
+        document.getElementById('loader').classList.add('d-none');
+        document.getElementById('tablaPosiciones').classList.remove('d-none');
+        let tbody = document.getElementById('tbodyPosiciones');
+        let html = '';
+        
+        data.forEach(row => {
+          let medalla = row.rank === 1 ? '🥇' : row.rank === 2 ? '🥈' : row.rank === 3 ? '🥉' : `<span class="fw-bold text-muted">${row.rank}</span>`;
+          let badge = row.tipo === "VIP" ? '<span class="vip-badge shadow-sm">VIP</span>' : '';
+         
+          html += `<tr class="clickable-row" onclick="abrirDashboard('${row.id}','${row.nombre}')">
+                     <td class="text-center">${medalla}</td>
+                     <td class="fw-bold text-dark">${row.nombre} ${badge} <br><small class="text-primary" style="font-size:0.75em;">🔍 Ver más</small></td>
+                     <td class="text-center fw-bold text-primary fs-4">${row.puntos}</td>
+                   </tr>`;
+        });
+        tbody.innerHTML = html;
+      } catch (e) {
+        document.getElementById('loader').innerHTML = `<div class="alert alert-danger">Error al cargar datos.</div>`;
+      }
+    };
+
+    window.abrirDashboard = function(id, nombre) {
+      window.currentPartId = id;
+      document.getElementById('dashNombre').innerText = nombre;
+      document.getElementById('filtroModal').value = document.getElementById('filtroJornada').value;
+      var myModal = new bootstrap.Modal(document.getElementById('modalDashboard'));
+      myModal.show();
+      window.cargarDashboard();
+    };
+    
+    // 3. Ver los pronósticos de la persona consultando Firebase con Cálculo Dinámico
+    window.cargarDashboard = async function() {
+      let filtro = document.getElementById('filtroModal').value;
+      document.getElementById('loaderModal').classList.remove('d-none');
+      document.getElementById('dashboardContent').classList.add('d-none');
+     
+      try {
+        let userDoc = await getDoc(doc(db, "usuarios", window.currentPartId));
+        let u = userDoc.data();
+        
+        const pronosSnap = await getDocs(collection(db, "usuarios", window.currentPartId, "pronosticos"));
+        let historial = [];
+        
+        // Contadores dinámicos para las 4 tarjetas (Cálculo en Vivo)
+        let calcPuntos = 0;
+        let calcExactos = 0;
+        let calcDiferencia = 0;
+        let calcTendencia = 0;
+        
+        pronosSnap.forEach(prDoc => {
+            let pr = prDoc.data();
+            let p = todosLosPartidos.find(part => part.id === pr.partidoId);
+            
+            if (p) {
+                if (filtro !== "Todas" && p.jornada !== filtro) return; 
+                
+                let prGL = Number(pr.golesLocal);
+                let prGV = Number(pr.golesVisita);
+                let ptoUI = '⏳';
+                
+                if (p.estado === "Finalizado") {
+                    let realGL = Number(p.golesLocalReal);
+                    let realGV = Number(p.golesVisitaReal);
+                    let ptsCalculados = 0;
+                    
+                    // Lógica 3-2-1
+                    if (prGL === realGL && prGV === realGV) {
+                        ptsCalculados = 3;
+                        calcExactos++;
+                    }
+                    else if ((realGL - realGV) === (prGL - prGV)) {
+                        ptsCalculados = 2;
+                        calcDiferencia++;
+                    }
+                    else if ((realGL > realGV && prGL > prGV) || (realGL < realGV && prGL < prGV) || (realGL === realGV && prGL === prGV)) {
+                        ptsCalculados = 1;
+                        calcTendencia++;
+                    }
+                    
+                    calcPuntos += ptsCalculados;
+                    ptoUI = ptsCalculados > 0 ? `+${ptsCalculados}` : "0";
+                }
+                
+                historial.push({
+                    jornada: p.jornada,
+                    partido: `${p.local} vs ${p.visita}`,
+                    pronostico: `${prGL} - ${prGV}`,
+                    real: p.estado === "Finalizado" ? `${p.golesLocalReal} - ${p.golesVisitaReal}` : 'Pendiente',
+                    puntos: ptoUI
+                });
+            }
+        });
+
+        // Aplicamos los valores calculados a las 4 tarjetas vistosas
+        document.getElementById('statExactos').innerText = calcExactos;
+        document.getElementById('statDiferencia').innerText = calcDiferencia;
+        document.getElementById('statTendencia').innerText = calcTendencia;
+        document.getElementById('statTotal').innerText = calcPuntos;
+
+        document.getElementById('loaderModal').classList.add('d-none');
+        document.getElementById('dashboardContent').classList.remove('d-none');
+        
+        let tbody = document.getElementById('tbodyHistorial');
+        let html = '';
+        
+        if(historial.length === 0) {
+           html = '<tr><td colspan="4" class="text-muted py-4 fw-bold">Aún no hay pronósticos en esta fecha.</td></tr>';
+        } else {
+           historial.forEach(h => {
+              let badgeColor = "bg-secondary";
+              if (h.puntos === "+3") badgeColor = "bg-success"; 
+              else if (h.puntos === "+2") badgeColor = "bg-info text-dark"; 
+              else if (h.puntos === "+1") badgeColor = "bg-warning text-dark";
+              else if (h.puntos === "⏳") badgeColor = "bg-light text-dark border"; 
+              html += `<tr>
+                         <td class="text-start"><small class="text-muted d-block fw-bold mb-1" style="font-size:0.75rem;">${h.jornada}</small><strong class="text-dark" style="font-size:0.9rem;">${h.partido}</strong></td>
+                         <td class="fw-bold bg-light" style="font-size:1.1rem;">${h.pronostico}</td>
+                         <td class="fw-bold bg-light" style="font-size:1.1rem;">${h.real}</td>
+                         <td><span class="badge ${badgeColor} fs-6 shadow-sm" style="min-width:40px;">${h.puntos}</span></td>
+                       </tr>`;
+           });
+        }
+        tbody.innerHTML = html;
+      } catch (error) {
+        document.getElementById('loaderModal').innerHTML = `<div class="alert alert-danger">Error al cargar datos.</div>`;
+      }
+    };
+  </script>
+</body>
+</html>
