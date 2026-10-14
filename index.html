@@ -3,14 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Clasificación | Aliado</title>
+  <title>Clasificación | Pronósticos</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
-    /* El overflow-x: hidden evita el espacio blanco en celulares */
     body { background-color: #f4f6f9; overflow-x: hidden; width: 100%; }
     .header-app { background: linear-gradient(135deg, #3f2b6e 0%, #2a1b4e 100%) !important; color: white; padding: 2rem 0; }
     .top-banner { background-color: #ffffff; padding: 15px 0; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05); position: relative; z-index: 10; border-bottom: 3px solid #d4ff00; }
-    /* max-width: 100% evita que el banner rompa la pantalla */
     .top-banner img { height: 60px; max-width: 100%; object-fit: contain; }
     .table-container { background: white; border-radius: 10px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-top: -30px; position: relative; z-index: 20; }
     .vip-badge { font-size: 0.75rem; background: #ffd700; color: #000; padding: 3px 8px; border-radius: 12px; margin-left: 5px; font-weight: bold;}
@@ -18,7 +16,6 @@
     .clickable-row:hover { background-color: #e2e8f0 !important; }
     .stat-card { border-radius: 10px; padding: 15px; text-align: center; }
     .footer-empresa { background-color: #f8f9fa; text-align: center; padding: 30px 15px; margin-top: 60px; color: #3f2b6e; }
-    /* Protegemos también el logo inferior */
     .footer-logo { height: 50px; max-width: 100%; margin-bottom: 10px; object-fit: contain; }
   </style>
 </head>
@@ -52,7 +49,7 @@
     
     <div id="loader" class="text-center my-5"><div class="spinner-border text-primary" role="status"></div></div>
    
-    <div class="table-responsive border-0">
+    <div class="table-responsive">
       <table class="table table-hover d-none mt-3 align-middle" id="tablaPosiciones">
         <thead class="table-dark">
           <tr>
@@ -87,27 +84,21 @@
          
           <div id="dashboardContent" class="d-none">
             
-            <!-- TARJETAS DE ACIERTOS (NUEVO DISEÑO COLORIDO 4 COLUMNAS) -->
+            <!-- TARJETAS DE ACIERTOS (NUEVO DISEÑO 3-1) -->
             <div class="row g-2 mb-4">
-              <div class="col-6 col-md-3">
+              <div class="col-4">
                 <div class="stat-card bg-success text-white shadow-sm p-2">
                   <h3 class="text-white m-0 fw-bold" id="statExactos">0</h3>
                   <small class="text-white-50 fw-bold d-block mt-1" style="font-size:0.75rem;">Exactos<br>(3 pts)</small>
                 </div>
               </div>
-              <div class="col-6 col-md-3">
-                <div class="stat-card bg-info text-dark shadow-sm p-2">
-                  <h3 class="text-dark m-0 fw-bold" id="statDiferencia">0</h3>
-                  <small class="text-dark-50 fw-bold d-block mt-1" style="font-size:0.75rem;">Diferencia<br>(2 pts)</small>
-                </div>
-              </div>
-              <div class="col-6 col-md-3">
+              <div class="col-4">
                 <div class="stat-card bg-warning text-dark shadow-sm p-2">
                   <h3 class="text-dark m-0 fw-bold" id="statTendencia">0</h3>
                   <small class="text-dark-50 fw-bold d-block mt-1" style="font-size:0.75rem;">Ganador<br>(1 pt)</small>
                 </div>
               </div>
-              <div class="col-6 col-md-3">
+              <div class="col-4">
                 <div class="stat-card bg-primary text-white shadow p-2">
                   <h3 class="m-0 fw-bold text-white" id="statTotal">0</h3>
                   <small class="fw-bold d-block mt-1 text-white-50" style="font-size:0.75rem;">Puntos<br>Totales</small>
@@ -132,7 +123,7 @@
   
   <footer class="footer-empresa text-center">
     <p class="mb-2 text-muted fw-bold" style="font-size: 0.85rem;">Desarrollado por:</p>
-    <img src="logo2.png" alt="Aliado" class="footer-logo d-block mx-auto mb-2">
+    <img src="logo2.png" alt="Zimmermann" class="footer-logo d-block mx-auto mb-2">
     <a href="https://wa.me/51993801594" target="_blank" class="text-decoration-none fw-bold d-inline-block mt-1" style="color: #25D366; font-size: 0.95rem;">
       💬 WhatsApp: +51 993 801 594
     </a>
@@ -145,16 +136,17 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
     import { getFirestore, doc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
     
-    // Tus llaves de Firebase
+    // Tus llaves de Firebase (Zimmermann)
     const firebaseConfig = {
-  apiKey: "AIzaSyD8QLVq_pTww6MIY-MNZtADWRHgR6S3Ixw",
-  authDomain: "pronosticos-zimmermann.firebaseapp.com",
-  projectId: "pronosticos-zimmermann",
-  storageBucket: "pronosticos-zimmermann.firebasestorage.app",
-  messagingSenderId: "978601984579",
-  appId: "1:978601984579:web:c5d073d9a3717010fb0af6",
-  measurementId: "G-KC5PLZ4SD0"
-};    
+      apiKey: "AIzaSyD8QLVq_pTww6MIY-MNZtADWRHgR6S3Ixw",
+      authDomain: "pronosticos-zimmermann.firebaseapp.com",
+      projectId: "pronosticos-zimmermann",
+      storageBucket: "pronosticos-zimmermann.firebasestorage.app",
+      messagingSenderId: "978601984579",
+      appId: "1:978601984579:web:c5d073d9a3717010fb0af6",
+      measurementId: "G-KC5PLZ4SD0"
+    };
+    
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     
@@ -221,8 +213,8 @@
                            let realGL = Number(p.golesLocalReal);
                            let realGV = Number(p.golesVisitaReal);
                            
+                           // LÓGICA 3 Y 1 (TABLA PRINCIPAL)
                            if (prGL === realGL && prGV === realGV) ptsJornada += 3;
-                           else if ((realGL - realGV) === (prGL - prGV)) ptsJornada += 2;
                            else if ((realGL > realGV && prGL > prGV) || (realGL < realGV && prGL < prGV) || (realGL === realGV && prGL === prGV)) ptsJornada += 1;
                        }
                    });
@@ -283,10 +275,9 @@
         const pronosSnap = await getDocs(collection(db, "usuarios", window.currentPartId, "pronosticos"));
         let historial = [];
         
-        // Contadores dinámicos para las 4 tarjetas (Cálculo en Vivo)
+        // Contadores dinámicos para las 3 tarjetas (Cálculo en Vivo 3 y 1)
         let calcPuntos = 0;
         let calcExactos = 0;
-        let calcDiferencia = 0;
         let calcTendencia = 0;
         
         pronosSnap.forEach(prDoc => {
@@ -305,14 +296,10 @@
                     let realGV = Number(p.golesVisitaReal);
                     let ptsCalculados = 0;
                     
-                    // Lógica 3-2-1
+                    // LÓGICA 3 Y 1 (DETALLE DASHBOARD)
                     if (prGL === realGL && prGV === realGV) {
                         ptsCalculados = 3;
                         calcExactos++;
-                    }
-                    else if ((realGL - realGV) === (prGL - prGV)) {
-                        ptsCalculados = 2;
-                        calcDiferencia++;
                     }
                     else if ((realGL > realGV && prGL > prGV) || (realGL < realGV && prGL < prGV) || (realGL === realGV && prGL === prGV)) {
                         ptsCalculados = 1;
@@ -333,9 +320,8 @@
             }
         });
 
-        // Aplicamos los valores calculados a las 4 tarjetas vistosas
+        // Aplicamos los valores calculados a las 3 tarjetas
         document.getElementById('statExactos').innerText = calcExactos;
-        document.getElementById('statDiferencia').innerText = calcDiferencia;
         document.getElementById('statTendencia').innerText = calcTendencia;
         document.getElementById('statTotal').innerText = calcPuntos;
 
@@ -351,7 +337,6 @@
            historial.forEach(h => {
               let badgeColor = "bg-secondary";
               if (h.puntos === "+3") badgeColor = "bg-success"; 
-              else if (h.puntos === "+2") badgeColor = "bg-info text-dark"; 
               else if (h.puntos === "+1") badgeColor = "bg-warning text-dark";
               else if (h.puntos === "⏳") badgeColor = "bg-light text-dark border"; 
               html += `<tr>
