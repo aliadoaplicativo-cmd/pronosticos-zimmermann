@@ -195,36 +195,31 @@
            
            if(tip === "Todos" || u.rol === tip || (tip==="Público" && u.rol!=="VIP")) {
                
-               let puntosMostrar = 0;
+               // CÁLCULO 100% EN VIVO (Ignora los errores del Excel)
+               const pronosSnap = await getDocs(collection(db, "usuarios", u.id, "pronosticos"));
+               let ptsCalculados = 0;
                
-               if (jor === "Todas") {
-                   puntosMostrar = u.puntos || 0;
-               } else {
-                   const pronosSnap = await getDocs(collection(db, "usuarios", u.id, "pronosticos"));
-                   let ptsJornada = 0;
+               pronosSnap.forEach(prDoc => {
+                   let pr = prDoc.data();
+                   let p = todosLosPartidos.find(part => part.id === pr.partidoId);
                    
-                   pronosSnap.forEach(prDoc => {
-                       let pr = prDoc.data();
-                       let p = todosLosPartidos.find(part => part.id === pr.partidoId);
+                   // Si el partido está Finalizado Y (es la jornada elegida O son "Todas")
+                   if (p && p.estado === "Finalizado" && (jor === "Todas" || p.jornada === jor)) {
+                       let prGL = Number(pr.golesLocal);
+                       let prGV = Number(pr.golesVisita);
+                       let realGL = Number(p.golesLocalReal);
+                       let realGV = Number(p.golesVisitaReal);
                        
-                       if (p && p.jornada === jor && p.estado === "Finalizado") {
-                           let prGL = Number(pr.golesLocal);
-                           let prGV = Number(pr.golesVisita);
-                           let realGL = Number(p.golesLocalReal);
-                           let realGV = Number(p.golesVisitaReal);
-                           
-                           // LÓGICA 3 Y 1 (TABLA PRINCIPAL)
-                           if (prGL === realGL && prGV === realGV) ptsJornada += 3;
-                           else if ((realGL > realGV && prGL > prGV) || (realGL < realGV && prGL < prGV) || (realGL === realGV && prGL === prGV)) ptsJornada += 1;
-                       }
-                   });
-                   puntosMostrar = ptsJornada;
-               }
+                       // LÓGICA 3 Y 1 EXACTA
+                       if (prGL === realGL && prGV === realGV) ptsCalculados += 3;
+                       else if ((realGL > realGV && prGL > prGV) || (realGL < realGV && prGL < prGV) || (realGL === realGV && prGL === prGV)) ptsCalculados += 1;
+                   }
+               });
                
                data.push({
                    id: u.id,
                    nombre: u.nombre || u.nick,
-                   puntos: puntosMostrar,
+                   puntos: ptsCalculados, // <--- La web ahora pone la verdad absoluta matemática
                    tipo: u.rol || "Público"
                });
            }
@@ -252,7 +247,6 @@
         document.getElementById('loader').innerHTML = `<div class="alert alert-danger">Error al cargar datos.</div>`;
       }
     };
-
     window.abrirDashboard = function(id, nombre) {
       window.currentPartId = id;
       document.getElementById('dashNombre').innerText = nombre;
