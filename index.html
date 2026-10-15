@@ -6,15 +6,12 @@
   <title>Clasificación | Pronósticos</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
-    /* VARIABLES DINÁMICAS PARA EL COLOR DE MARCA BLANCA */
     :root {
       --main-bg: #d32f2f;
       --main-text: #ffffff;
     }
     body { background-color: #f4f6f9; overflow-x: hidden; width: 100%; }
-    
     .header-app { background: var(--main-bg) !important; color: var(--main-text) !important; padding: 2rem 0; transition: all 0.3s; }
-    
     .top-banner { background-color: #ffffff; padding: 15px 0; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05); position: relative; z-index: 10; border-bottom: 3px solid #d4ff00; }
     .top-banner img { height: 60px; max-width: 100%; object-fit: contain; }
     .table-container { background: white; border-radius: 10px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-top: -30px; position: relative; z-index: 20; }
@@ -37,7 +34,6 @@
   </div>
  
   <div class="container table-container" style="max-width: 900px;">
-    <!-- FILTROS JORNADA Y TIPO -->
     <div class="row g-2 mb-3 align-items-center">
       <div class="col-md-4"><h4 class="m-0 text-dark fw-bold pt-1">Clasificación</h4></div>
       <div class="col-md-4">
@@ -70,7 +66,6 @@
     </div>
   </div>
 
-  <!-- MODAL DASHBOARD DEL PARTICIPANTE -->
   <div class="modal fade" id="modalDashboard" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
       <div class="modal-content border-0 shadow-lg">
@@ -91,30 +86,24 @@
          
           <div id="dashboardContent" class="d-none">
             
-            <!-- TARJETAS DE ESTADÍSTICAS DINÁMICAS (4 COLUMNAS) -->
+            <!-- TARJETAS DE ESTADÍSTICAS DINÁMICAS (AHORA SON 3) -->
             <div class="row g-2 mb-4">
-              <div class="col-3">
+              <div class="col-4">
                 <div class="stat-card bg-success text-white shadow-sm">
-                  <h4 class="text-white m-0 fw-bold" id="statExactos">0</h4>
-                  <small class="text-white-50 fw-bold d-block mt-1" style="font-size:0.70rem;" id="labelExactos">Exacto<br>(3 pts)</small>
+                  <h3 class="text-white m-0 fw-bold" id="statExactos">0</h3>
+                  <small class="text-white-50 fw-bold d-block mt-1" style="font-size:0.80rem;" id="labelExactos">Exacto<br>(3 pts)</small>
                 </div>
               </div>
-              <div class="col-3">
-                <div class="stat-card bg-info text-dark shadow-sm">
-                  <h4 class="text-dark m-0 fw-bold" id="statDiferencia">0</h4>
-                  <small class="text-dark-50 fw-bold d-block mt-1" style="font-size:0.70rem;" id="labelDiferencia">Difer.<br>(2 pts)</small>
-                </div>
-              </div>
-              <div class="col-3">
+              <div class="col-4">
                 <div class="stat-card bg-warning text-dark shadow-sm">
-                  <h4 class="text-dark m-0 fw-bold" id="statTendencia">0</h4>
-                  <small class="text-dark-50 fw-bold d-block mt-1" style="font-size:0.70rem;" id="labelGanador">Ganador<br>(1 pt)</small>
+                  <h3 class="text-dark m-0 fw-bold" id="statTendencia">0</h3>
+                  <small class="text-dark-50 fw-bold d-block mt-1" style="font-size:0.80rem;" id="labelGanador">Ganador<br>(1 pt)</small>
                 </div>
               </div>
-              <div class="col-3">
+              <div class="col-4">
                 <div class="stat-card bg-primary text-white shadow">
-                  <h4 class="m-0 fw-bold text-white" id="statTotal">0</h4>
-                  <small class="fw-bold d-block mt-1 text-white-50" style="font-size:0.70rem;">Puntos<br>Totales</small>
+                  <h3 class="m-0 fw-bold text-white" id="statTotal">0</h3>
+                  <small class="fw-bold d-block mt-1 text-white-50" style="font-size:0.80rem;">Puntos<br>Totales</small>
                 </div>
               </div>
             </div>
@@ -144,12 +133,10 @@
   
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   
-  <!-- SCRIPT CONEXIÓN DIRECTA A FIREBASE -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
     import { getFirestore, doc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
     
-    // Tus llaves de Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyD8QLVq_pTww6MIY-MNZtADWRHgR6S3Ixw",
       authDomain: "pronosticos-zimmermann.firebaseapp.com",
@@ -166,25 +153,26 @@
     let todosLosPartidos = [];
     window.currentPartId = null;
     
-    // Reglas maestras por defecto (se sobrescriben con Firebase)
-    window.reglas = { exacto: 3, diferencia: 2, ganador: 1, titulo: "Liga de Pronósticos", colorFondo: "#d32f2f", colorTexto: "#ffffff" };
+    // Reglas sin diferencia
+    window.reglas = { exacto: 3, ganador: 1, titulo: "Liga de Pronósticos", colorFondo: "#d32f2f", colorTexto: "#ffffff" };
 
-    // 1. Cargar configuración maestra y jornadas
     window.onload = async function() {
       try {
         const configSnap = await getDoc(doc(db, "configuracion", "reglas"));
         if(configSnap.exists()) {
-           window.reglas = configSnap.data();
+           let dataConfig = configSnap.data();
+           window.reglas.exacto = dataConfig.exacto || 3;
+           window.reglas.ganador = dataConfig.ganador || 1;
+           window.reglas.titulo = dataConfig.titulo || "Liga de Pronósticos";
+           window.reglas.colorFondo = dataConfig.colorFondo || "#d32f2f";
+           window.reglas.colorTexto = dataConfig.colorTexto || "#ffffff";
            
            document.documentElement.style.setProperty('--main-bg', window.reglas.colorFondo);
            document.documentElement.style.setProperty('--main-text', window.reglas.colorTexto);
            document.getElementById('tituloApp').innerText = "🏆 " + window.reglas.titulo;
            
            document.getElementById('labelExactos').innerHTML = `Exacto<br>(${window.reglas.exacto} pts)`;
-           document.getElementById('labelDiferencia').innerHTML = `Difer.<br>(${window.reglas.diferencia} pts)`;
            document.getElementById('labelGanador').innerHTML = `Ganador<br>(${window.reglas.ganador} pts)`;
-        } else {
-           document.getElementById('tituloApp').innerText = "🏆 " + window.reglas.titulo;
         }
 
         const querySnapshot = await getDocs(collection(db, "partidos"));
@@ -210,7 +198,6 @@
       }
     };
     
-    // 2. Pintar la tabla principal
     window.cargarTabla = async function() {
       let jor = document.getElementById('filtroJornada').value;
       let tip = document.getElementById('filtroTipo').value;
@@ -240,10 +227,9 @@
                        let realGL = Number(p.golesLocalReal);
                        let realGV = Number(p.golesVisitaReal);
                        
+                       // LÓGICA REVERTIDA: SOLO EXACTO Y GANADOR
                        if (prGL === realGL && prGV === realGV) {
                            ptsCalculados += window.reglas.exacto;
-                       } else if ((realGL - realGV) === (prGL - prGV)) {
-                           ptsCalculados += window.reglas.diferencia;
                        } else if ((realGL > realGV && prGL > prGV) || (realGL < realGV && prGL < prGV) || (realGL === realGV && prGL === prGV)) {
                            ptsCalculados += window.reglas.ganador;
                        }
@@ -291,7 +277,6 @@
       window.cargarDashboard();
     };
     
-    // 3. Ver desglose detallado del participante
     window.cargarDashboard = async function() {
       let filtro = document.getElementById('filtroModal').value;
       document.getElementById('loaderModal').classList.remove('d-none');
@@ -301,7 +286,7 @@
         const pronosSnap = await getDocs(collection(db, "usuarios", window.currentPartId, "pronosticos"));
         let historial = [];
         
-        let calcPuntos = 0, calcExactos = 0, calcDiferencia = 0, calcTendencia = 0;
+        let calcPuntos = 0, calcExactos = 0, calcTendencia = 0;
         
         pronosSnap.forEach(prDoc => {
             let pr = prDoc.data();
@@ -313,7 +298,7 @@
                 let prGL = Number(pr.golesLocal);
                 let prGV = Number(pr.golesVisita);
                 let ptoUI = '⏳';
-                let ptsCalculados = 0; // CORRECCIÓN: Esta variable ahora existe siempre
+                let ptsCalculados = 0;
                 
                 if (p.estado === "Finalizado") {
                     let realGL = Number(p.golesLocalReal);
@@ -322,9 +307,6 @@
                     if (prGL === realGL && prGV === realGV) {
                         ptsCalculados = window.reglas.exacto;
                         calcExactos++;
-                    } else if ((realGL - realGV) === (prGL - prGV)) {
-                        ptsCalculados = window.reglas.diferencia;
-                        calcDiferencia++;
                     } else if ((realGL > realGV && prGL > prGV) || (realGL < realGV && prGL < prGV) || (realGL === realGV && prGL === prGV)) {
                         ptsCalculados = window.reglas.ganador;
                         calcTendencia++;
@@ -346,7 +328,6 @@
         });
         
         document.getElementById('statExactos').innerText = calcExactos;
-        document.getElementById('statDiferencia').innerText = calcDiferencia;
         document.getElementById('statTendencia').innerText = calcTendencia;
         document.getElementById('statTotal').innerText = calcPuntos;
         
@@ -362,7 +343,6 @@
            historial.forEach(h => {
               let badgeColor = "bg-secondary";
               if (h.valorCalc === window.reglas.exacto) badgeColor = "bg-success"; 
-              else if (h.valorCalc === window.reglas.diferencia) badgeColor = "bg-info text-dark"; 
               else if (h.valorCalc === window.reglas.ganador) badgeColor = "bg-warning text-dark";
               else if (h.valorCalc === -1) badgeColor = "bg-light text-dark border"; 
               
