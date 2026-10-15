@@ -6,16 +6,23 @@
   <title>Clasificación | Pronósticos</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
+    /* VARIABLES DINÁMICAS PARA EL COLOR DE MARCA BLANCA */
+    :root {
+      --main-bg: #d32f2f;
+      --main-text: #ffffff;
+    }
     body { background-color: #f4f6f9; overflow-x: hidden; width: 100%; }
-    .header-app { background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%) !important; color: white; padding: 2rem 0; }
+    /* El header ahora usa las variables que leerá de Firebase */
+    .header-app { background: var(--main-bg) !important; color: var(--main-text) !important; padding: 2rem 0; transition: all 0.3s; }
+    
     .top-banner { background-color: #ffffff; padding: 15px 0; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05); position: relative; z-index: 10; border-bottom: 3px solid #d4ff00; }
     .top-banner img { height: 60px; max-width: 100%; object-fit: contain; }
     .table-container { background: white; border-radius: 10px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-top: -30px; position: relative; z-index: 20; }
     .vip-badge { font-size: 0.75rem; background: #ffd700; color: #000; padding: 3px 8px; border-radius: 12px; margin-left: 5px; font-weight: bold;}
     .clickable-row { cursor: pointer; transition: background 0.2s; }
     .clickable-row:hover { background-color: #e2e8f0 !important; }
-    .stat-card { border-radius: 10px; padding: 15px; text-align: center; }
-    .footer-empresa { background-color: #f8f9fa; text-align: center; padding: 30px 15px; margin-top: 60px; color: #b71c1c; }
+    .stat-card { border-radius: 10px; padding: 10px; text-align: center; }
+    .footer-empresa { background-color: #f8f9fa; text-align: center; padding: 30px 15px; margin-top: 60px; color: var(--main-bg); }
     .footer-logo { height: 50px; max-width: 100%; margin-bottom: 10px; object-fit: contain; }
   </style>
 </head>
@@ -25,7 +32,7 @@
   </div>
   
   <div class="header-app text-center">
-    <h2>🏆 Liga de Pronósticos</h2>
+    <h2 id="tituloApp">🏆 Cargando...</h2>
     <p>Haz clic en un participante para ver su rendimiento detallado</p>
   </div>
  
@@ -67,8 +74,8 @@
   <div class="modal fade" id="modalDashboard" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
       <div class="modal-content border-0 shadow-lg">
-        <div class="modal-header header-app text-white border-0 py-3">
-          <h5 class="modal-title fw-bold" id="modalTitle">Desglose de Rendimiento</h5>
+        <div class="modal-header header-app border-0 py-3">
+          <h5 class="modal-title fw-bold">Desglose de Rendimiento</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body bg-light p-4">
@@ -84,24 +91,30 @@
          
           <div id="dashboardContent" class="d-none">
             
-            <!-- TARJETAS DE ACIERTOS (NUEVO DISEÑO 3-1) -->
+            <!-- TARJETAS DE ESTADÍSTICAS DINÁMICAS (4 COLUMNAS) -->
             <div class="row g-2 mb-4">
-              <div class="col-4">
-                <div class="stat-card bg-success text-white shadow-sm p-2">
-                  <h3 class="text-white m-0 fw-bold" id="statExactos">0</h3>
-                  <small class="text-white-50 fw-bold d-block mt-1" style="font-size:0.75rem;">Exactos<br>(3 pts)</small>
+              <div class="col-3">
+                <div class="stat-card bg-success text-white shadow-sm">
+                  <h4 class="text-white m-0 fw-bold" id="statExactos">0</h4>
+                  <small class="text-white-50 fw-bold d-block mt-1" style="font-size:0.70rem;" id="labelExactos">Exacto<br>(3 pts)</small>
                 </div>
               </div>
-              <div class="col-4">
-                <div class="stat-card bg-warning text-dark shadow-sm p-2">
-                  <h3 class="text-dark m-0 fw-bold" id="statTendencia">0</h3>
-                  <small class="text-dark-50 fw-bold d-block mt-1" style="font-size:0.75rem;">Ganador<br>(1 pt)</small>
+              <div class="col-3">
+                <div class="stat-card bg-info text-dark shadow-sm">
+                  <h4 class="text-dark m-0 fw-bold" id="statDiferencia">0</h4>
+                  <small class="text-dark-50 fw-bold d-block mt-1" style="font-size:0.70rem;" id="labelDiferencia">Difer.<br>(2 pts)</small>
                 </div>
               </div>
-              <div class="col-4">
-                <div class="stat-card bg-primary text-white shadow p-2">
-                  <h3 class="m-0 fw-bold text-white" id="statTotal">0</h3>
-                  <small class="fw-bold d-block mt-1 text-white-50" style="font-size:0.75rem;">Puntos<br>Totales</small>
+              <div class="col-3">
+                <div class="stat-card bg-warning text-dark shadow-sm">
+                  <h4 class="text-dark m-0 fw-bold" id="statTendencia">0</h4>
+                  <small class="text-dark-50 fw-bold d-block mt-1" style="font-size:0.70rem;" id="labelGanador">Ganador<br>(1 pt)</small>
+                </div>
+              </div>
+              <div class="col-3">
+                <div class="stat-card bg-primary text-white shadow">
+                  <h4 class="m-0 fw-bold text-white" id="statTotal">0</h4>
+                  <small class="fw-bold d-block mt-1 text-white-50" style="font-size:0.70rem;">Puntos<br>Totales</small>
                 </div>
               </div>
             </div>
@@ -152,10 +165,32 @@
     
     let todosLosPartidos = [];
     window.currentPartId = null;
+    
+    // Reglas maestras por defecto (se sobrescriben con Firebase)
+    window.reglas = { exacto: 3, diferencia: 2, ganador: 1, titulo: "Liga de Pronósticos", colorFondo: "#d32f2f", colorTexto: "#ffffff" };
 
-    // 1. Cargar la página y las jornadas
+    // 1. Cargar configuración maestra y jornadas
     window.onload = async function() {
       try {
+        // A. Cargar la configuración de Firebase
+        const configSnap = await getDoc(doc(db, "configuracion", "reglas"));
+        if(configSnap.exists()) {
+           window.reglas = configSnap.data();
+           
+           // Aplicar colores y titulo a la web
+           document.documentElement.style.setProperty('--main-bg', window.reglas.colorFondo);
+           document.documentElement.style.setProperty('--main-text', window.reglas.colorTexto);
+           document.getElementById('tituloApp').innerText = "🏆 " + window.reglas.titulo;
+           
+           // Actualizar texto de las tarjetas del modal
+           document.getElementById('labelExactos').innerHTML = `Exacto<br>(${window.reglas.exacto} pts)`;
+           document.getElementById('labelDiferencia').innerHTML = `Difer.<br>(${window.reglas.diferencia} pts)`;
+           document.getElementById('labelGanador').innerHTML = `Ganador<br>(${window.reglas.ganador} pts)`;
+        } else {
+           document.getElementById('tituloApp').innerText = "🏆 " + window.reglas.titulo;
+        }
+
+        // B. Cargar los partidos y fechas
         const querySnapshot = await getDocs(collection(db, "partidos"));
         let jornadasSet = new Set();
         querySnapshot.forEach((docSnap) => {
@@ -175,10 +210,11 @@
         window.cargarTabla();
       } catch (e) {
         console.error("Error", e);
+        document.getElementById('tituloApp').innerText = "🏆 Liga de Pronósticos";
       }
     };
     
-    // 2. Pintar la tabla principal
+    // 2. Pintar la tabla principal (Cálculo Dinámico)
     window.cargarTabla = async function() {
       let jor = document.getElementById('filtroJornada').value;
       let tip = document.getElementById('filtroTipo').value;
@@ -195,7 +231,6 @@
            
            if(tip === "Todos" || u.rol === tip || (tip==="Público" && u.rol!=="VIP")) {
                
-               // CÁLCULO 100% EN VIVO (Ignora los errores del Excel)
                const pronosSnap = await getDocs(collection(db, "usuarios", u.id, "pronosticos"));
                let ptsCalculados = 0;
                
@@ -203,23 +238,27 @@
                    let pr = prDoc.data();
                    let p = todosLosPartidos.find(part => part.id === pr.partidoId);
                    
-                   // Si el partido está Finalizado Y (es la jornada elegida O son "Todas")
                    if (p && p.estado === "Finalizado" && (jor === "Todas" || p.jornada === jor)) {
                        let prGL = Number(pr.golesLocal);
                        let prGV = Number(pr.golesVisita);
                        let realGL = Number(p.golesLocalReal);
                        let realGV = Number(p.golesVisitaReal);
                        
-                       // LÓGICA 3 Y 1 EXACTA
-                       if (prGL === realGL && prGV === realGV) ptsCalculados += 3;
-                       else if ((realGL > realGV && prGL > prGV) || (realGL < realGV && prGL < prGV) || (realGL === realGV && prGL === prGV)) ptsCalculados += 1;
+                       // LÓGICA DINÁMICA DE PUNTAJE LEYENDO FIREBASE/EXCEL
+                       if (prGL === realGL && prGV === realGV) {
+                           ptsCalculados += window.reglas.exacto;
+                       } else if ((realGL - realGV) === (prGL - prGV)) {
+                           ptsCalculados += window.reglas.diferencia;
+                       } else if ((realGL > realGV && prGL > prGV) || (realGL < realGV && prGL < prGV) || (realGL === realGV && prGL === prGV)) {
+                           ptsCalculados += window.reglas.ganador;
+                       }
                    }
                });
                
                data.push({
                    id: u.id,
                    nombre: u.nombre || u.nick,
-                   puntos: ptsCalculados, // <--- La web ahora pone la verdad absoluta matemática
+                   puntos: ptsCalculados,
                    tipo: u.rol || "Público"
                });
            }
@@ -247,6 +286,7 @@
         document.getElementById('loader').innerHTML = `<div class="alert alert-danger">Error al cargar datos.</div>`;
       }
     };
+
     window.abrirDashboard = function(id, nombre) {
       window.currentPartId = id;
       document.getElementById('dashNombre').innerText = nombre;
@@ -256,23 +296,17 @@
       window.cargarDashboard();
     };
     
-    // 3. Ver los pronósticos de la persona consultando Firebase con Cálculo Dinámico
+    // 3. Ver desglose detallado del participante
     window.cargarDashboard = async function() {
       let filtro = document.getElementById('filtroModal').value;
       document.getElementById('loaderModal').classList.remove('d-none');
       document.getElementById('dashboardContent').classList.add('d-none');
      
       try {
-        let userDoc = await getDoc(doc(db, "usuarios", window.currentPartId));
-        let u = userDoc.data();
-        
         const pronosSnap = await getDocs(collection(db, "usuarios", window.currentPartId, "pronosticos"));
         let historial = [];
         
-        // Contadores dinámicos para las 3 tarjetas (Cálculo en Vivo 3 y 1)
-        let calcPuntos = 0;
-        let calcExactos = 0;
-        let calcTendencia = 0;
+        let calcPuntos = 0, calcExactos = 0, calcDiferencia = 0, calcTendencia = 0;
         
         pronosSnap.forEach(prDoc => {
             let pr = prDoc.data();
@@ -290,13 +324,15 @@
                     let realGV = Number(p.golesVisitaReal);
                     let ptsCalculados = 0;
                     
-                    // LÓGICA 3 Y 1 (DETALLE DASHBOARD)
+                    // LÓGICA DINÁMICA DE PUNTAJE LEYENDO FIREBASE/EXCEL
                     if (prGL === realGL && prGV === realGV) {
-                        ptsCalculados = 3;
+                        ptsCalculados = window.reglas.exacto;
                         calcExactos++;
-                    }
-                    else if ((realGL > realGV && prGL > prGV) || (realGL < realGV && prGL < prGV) || (realGL === realGV && prGL === prGV)) {
-                        ptsCalculados = 1;
+                    } else if ((realGL - realGV) === (prGL - prGV)) {
+                        ptsCalculados = window.reglas.diferencia;
+                        calcDiferencia++;
+                    } else if ((realGL > realGV && prGL > prGV) || (realGL < realGV && prGL < prGV) || (realGL === realGV && prGL === prGV)) {
+                        ptsCalculados = window.reglas.ganador;
                         calcTendencia++;
                     }
                     
@@ -309,16 +345,17 @@
                     partido: `${p.local} vs ${p.visita}`,
                     pronostico: `${prGL} - ${prGV}`,
                     real: p.estado === "Finalizado" ? `${p.golesLocalReal} - ${p.golesVisitaReal}` : 'Pendiente',
-                    puntos: ptoUI
+                    puntos: ptoUI,
+                    valorCalc: p.estado === "Finalizado" ? ptsCalculados : -1
                 });
             }
         });
-
-        // Aplicamos los valores calculados a las 3 tarjetas
+        
         document.getElementById('statExactos').innerText = calcExactos;
+        document.getElementById('statDiferencia').innerText = calcDiferencia;
         document.getElementById('statTendencia').innerText = calcTendencia;
         document.getElementById('statTotal').innerText = calcPuntos;
-
+        
         document.getElementById('loaderModal').classList.add('d-none');
         document.getElementById('dashboardContent').classList.remove('d-none');
         
@@ -330,9 +367,10 @@
         } else {
            historial.forEach(h => {
               let badgeColor = "bg-secondary";
-              if (h.puntos === "+3") badgeColor = "bg-success"; 
-              else if (h.puntos === "+1") badgeColor = "bg-warning text-dark";
-              else if (h.puntos === "⏳") badgeColor = "bg-light text-dark border"; 
+              if (h.valorCalc === window.reglas.exacto) badgeColor = "bg-success"; 
+              else if (h.valorCalc === window.reglas.diferencia) badgeColor = "bg-info text-dark"; 
+              else if (h.valorCalc === window.reglas.ganador) badgeColor = "bg-warning text-dark";
+              else if (h.valorCalc === -1) badgeColor = "bg-light text-dark border"; 
               html += `<tr>
                          <td class="text-start"><small class="text-muted d-block fw-bold mb-1" style="font-size:0.75rem;">${h.jornada}</small><strong class="text-dark" style="font-size:0.9rem;">${h.partido}</strong></td>
                          <td class="fw-bold bg-light" style="font-size:1.1rem;">${h.pronostico}</td>
