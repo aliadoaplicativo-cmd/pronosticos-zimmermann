@@ -30,6 +30,7 @@
       <button class="btn btn-dark w-100 fw-bold" onclick="ingresarAdmin()">Ingresar al Panel</button>
     </div>
   </div>
+
   <div class="container mt-4 d-none" style="max-width: 800px;" id="adminPanel">
     <div class="row">
       <!-- SINCRONIZAR -->
@@ -51,7 +52,7 @@
           <button class="btn btn-success w-100 fw-bold" onclick="crearVIP()">Crear VIP</button>
         </div>
       </div>
-      <!-- CIERRE DE JORNADA (AHORA CON MENÚ DESPLEGABLE) -->
+      <!-- CIERRE DE JORNADA -->
       <div class="col-md-6">
         <div class="admin-card border-danger">
           <h5 class="text-danger fw-bold mb-3">3. Cierre de Jornada</h5>
@@ -62,11 +63,11 @@
           <button class="btn btn-danger w-100 fw-bold" onclick="establecerCierre()">🔒 Bloquear Pronósticos</button>
         </div>
       </div>
-      <!-- MÓDULO 4: CALCULAR PUNTAJES -->
+      <!-- CALCULAR PUNTAJES -->
       <div class="col-md-12">
         <div class="admin-card border-primary">
           <h5 class="text-primary fw-bold mb-3">4. Calcular Puntajes</h5>
-          <p class="text-muted small">Haz clic aquí después de llenar los resultados reales en Excel. Este botón calculará los puntos de todos los usuarios en Firebase basados en tu hoja de Configuración.</p>
+          <p class="text-muted small">Haz clic aquí después de llenar los resultados reales en Excel. Este botón calculará los puntos de todos los usuarios en Firebase y actualizará el diseño de la web.</p>
           <button class="btn btn-primary w-100 fw-bold shadow-sm py-2" onclick="calcularPuntosFirebase()">
             🏆 Calcular Puntos y Actualizar Tabla
           </button>
@@ -75,6 +76,7 @@
     </div>
     <div class="text-center mt-3"><button class="btn btn-outline-secondary" onclick="location.reload()">Salir del Panel</button></div>
   </div>
+
   <footer class="footer-empresa text-center">
     <p class="mb-2 text-muted fw-bold" style="font-size: 0.85rem;">Desarrollado por:</p>
     <img src="logo2.png" alt="Aliado" class="footer-logo d-block mx-auto mb-2">
@@ -82,22 +84,26 @@
       💬 WhatsApp: +51 993 801 594
     </a>
   </footer>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
     import { getFirestore, doc, setDoc, collection, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+    
     // LLAVES DE FIREBASE ALIADO
     const firebaseConfig = {
-  apiKey: "AIzaSyD8QLVq_pTww6MIY-MNZtADWRHgR6S3Ixw",
-  authDomain: "pronosticos-zimmermann.firebaseapp.com",
-  projectId: "pronosticos-zimmermann",
-  storageBucket: "pronosticos-zimmermann.firebasestorage.app",
-  messagingSenderId: "978601984579",
-  appId: "1:978601984579:web:c5d073d9a3717010fb0af6",
-  measurementId: "G-KC5PLZ4SD0"
-};
+      apiKey: "AIzaSyD8QLVq_pTww6MIY-MNZtADWRHgR6S3Ixw",
+      authDomain: "pronosticos-zimmermann.firebaseapp.com",
+      projectId: "pronosticos-zimmermann",
+      storageBucket: "pronosticos-zimmermann.firebasestorage.app",
+      messagingSenderId: "978601984579",
+      appId: "1:978601984579:web:c5d073d9a3717010fb0af6",
+      measurementId: "G-KC5PLZ4SD0"
+    };
+    
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-    // RECUERDA PONER TU URL DE APPS SCRIPT AQUÍ:
+    
+    // ⚠️ RECUERDA PONER AQUÍ LA NUEVA URL DE APPS SCRIPT QUE GENERASTE HOY:
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw6Fs5PRrokvqn69DS1PVFP0ADD8PbDDjeJu6zYuai9Pc_Rl7wdFeFiTk8ZEZr462vopA/exec";
     
     let globalPass = "";
@@ -111,6 +117,7 @@
       if (json.status === "error") throw new Error(json.message);
       return json.data;
     }
+
     window.ingresarAdmin = async () => {
       let pass = document.getElementById('adminPass').value;
       if(!pass) return Swal.fire('Error', 'Ingresa la contraseña', 'warning');
@@ -128,6 +135,7 @@
         document.getElementById('adminPanel').classList.remove('d-none');
       } catch (err) { Swal.fire('Atención', err.message, 'error'); }
     };
+
     window.crearVIP = async () => {
       let n = document.getElementById('nuevoNombre').value.trim();
       let c = document.getElementById('nuevaClave').value.trim();
@@ -136,10 +144,7 @@
       Swal.fire({title: 'Creando VIP en la Nube...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
       
       try {
-        // 1. Creamos un ID único para el VIP (ej. VIP_4829)
         let vipId = "VIP_" + Math.floor(1000 + Math.random() * 9000);
-        
-        // 2. Lo guardamos directo en Firebase
         await setDoc(doc(db, "usuarios", vipId), {
           id: vipId,
           nombre: n,
@@ -150,7 +155,6 @@
           exactos: 0,
           aciertosGanador: 0
         });
-        // 3. (Opcional) Lo anotamos también en tu Excel como respaldo
         await callAPI("registrarParticipanteAPI", {password: globalPass, nombre: n, clave: c, tipo: "VIP"});
         document.getElementById('nuevoNombre').value = "";
         document.getElementById('nuevaClave').value = "";
@@ -159,6 +163,7 @@
         Swal.fire('Error', err.message, 'error');
       }
     };
+
     window.establecerCierre = async () => {
       let j = document.getElementById('selectJornadaCierre').value;
       let f = document.getElementById('inputFechaCierre').value;
@@ -166,19 +171,14 @@
       
       Swal.fire({ title: 'Programando cierre...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
       try {
-        // 1. Guardar en Google Sheets (como antes)
         let res = await callAPI("guardarCierreAPI", {password: globalPass, jornada: j, fecha: f});
-        
-        // 2. NUEVO: Guardar la fecha/hora límite directamente en Firebase
-        await setDoc(doc(db, "cierres", j), {
-          jornada: j,
-          fechaLimite: f
-        });
+        await setDoc(doc(db, "cierres", j), { jornada: j, fechaLimite: f });
         Swal.fire({ icon: 'success', title: '¡Cierre Programado!', text: `${res} (Sincronizado en la Nube)`, timer: 2200, showConfirmButton: false });
       } catch (err) {
         Swal.fire('Error', err.message, 'error');
       }
     };
+
     window.sincronizarPartidos = async () => {
       Swal.fire({title: 'Leyendo Excel...', text: 'Obteniendo partidos...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
       try {
@@ -188,7 +188,6 @@
         Swal.fire({title: 'Subiendo a Firebase...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
         const promesas = partidos.map(p => {
           const docRef = doc(db, "partidos", String(p.id).trim());
-          // Usamos merge: true para no borrar goles reales si ya existían
           return setDoc(docRef, { 
             id: String(p.id).trim(), 
             jornada: p.jornada, 
@@ -201,21 +200,21 @@
         Swal.fire('¡Éxito!', `Se sincronizaron los partidos a la Nube correctamente.`, 'success');
       } catch (error) { Swal.fire('Error', error.message, 'error'); }
     };
+
     window.calcularPuntosFirebase = async () => {
-       Swal.fire({title: 'Analizando Excel...', text: 'Leyendo resultados y configuración...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+       Swal.fire({title: 'Analizando Excel...', text: 'Leyendo resultados y configuración maestra...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
        try {
           const datosExcel = await callAPI("obtenerResultadosYReglasAPI", {password: globalPass});
           const reglas = datosExcel.reglas;
           const resultadosReales = datosExcel.resultados;
           
-          if(Object.keys(resultadosReales).length === 0) {
-             return Swal.fire('Aviso', 'Aún no hay partidos marcados como "Finalizado" en el Excel.', 'warning');
-          }
-          Swal.fire({title: 'Actualizando Nube...', text: 'Guardando resultados reales y calculando puntajes...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+          Swal.fire({title: 'Actualizando Nube...', text: 'Guardando configuración, resultados y calculando puntajes...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
           let promesasUpdate = [];
-          // 1. Guardar las reglas actuales en Firebase
+          
+          // 1. Guardar la configuración maestra (Colores, Título, Puntos) en Firebase
           promesasUpdate.push(setDoc(doc(db, "configuracion", "reglas"), reglas));
-          // 2. Guardar los goles reales en cada partido dentro de Firebase (usando setDoc + merge para que nunca falle)
+          
+          // 2. Guardar los goles reales
           for (let pid in resultadosReales) {
              let cleanId = String(pid).trim();
              promesasUpdate.push(setDoc(doc(db, "partidos", cleanId), {
@@ -226,49 +225,47 @@
                 bloqueado: true
              }, { merge: true }));
           }
+          
           // 3. Traer todos los usuarios y calcular sus puntos
-          const usuariosSnap = await getDocs(collection(db, "usuarios"));
-          for(let userDoc of usuariosSnap.docs) {
-             let uid = userDoc.id;
-             let ptsTotales = 0; let exactos = 0; let ganadores = 0;
-             const pronosSnap = await getDocs(collection(db, "usuarios", uid, "pronosticos"));
-             
-             pronosSnap.forEach(prDoc => {
-                let pr = prDoc.data();
-                let pid = String(pr.partidoId).trim();
-                
-                if(resultadosReales[pid]) {
-                   let realGL = Number(resultadosReales[pid].golesLocal);
-                   let realGV = Number(resultadosReales[pid].golesVisita);
-                   let prGL = Number(pr.golesLocal);
-                   let prGV = Number(pr.golesVisita);
-                   
-                   // LÓGICA DE PUNTUACIÓN ACTUALIZADA (3 - 2 - 1)
-                   if (prGL === realGL && prGV === realGV) {
-                      // RESULTADO EXACTO (3 puntos o el valor que tengas en el Excel)
-                      ptsTotales += reglas.exacto || 3; 
-                      exactos++;
-                   } else if ((realGL - realGV) === (prGL - prGV)) {
-                      // DIFERENCIA DE GOLES CORRECTA (2 puntos)
-                      // *Nota: Asegúrate de tener "diferencia" como regla en tu Excel o Apps Script, 
-                      // si no, tomará 2 puntos por defecto.
-                      ptsTotales += reglas.diferencia || 2; 
-                   } else if ((realGL > realGV && prGL > prGV) || (realGL < realGV && prGL < prGV) || (realGL === realGV && prGL === prGV)) {
-                      // ACIERTO DE GANADOR/EMPATE (1 punto o el valor en Excel)
-                      ptsTotales += reglas.ganador || 1; 
-                      ganadores++;
-                   }
-                }
-             });
-             promesasUpdate.push(updateDoc(doc(db, "usuarios", uid), {
-                puntos: ptsTotales,
-                exactos: exactos,
-                aciertosGanador: ganadores
-             }));
+          if(Object.keys(resultadosReales).length > 0) {
+              const usuariosSnap = await getDocs(collection(db, "usuarios"));
+              for(let userDoc of usuariosSnap.docs) {
+                 let uid = userDoc.id;
+                 let ptsTotales = 0; let exactos = 0; let ganadores = 0;
+                 const pronosSnap = await getDocs(collection(db, "usuarios", uid, "pronosticos"));
+                 
+                 pronosSnap.forEach(prDoc => {
+                    let pr = prDoc.data();
+                    let pid = String(pr.partidoId).trim();
+                    
+                    if(resultadosReales[pid]) {
+                       let realGL = Number(resultadosReales[pid].golesLocal);
+                       let realGV = Number(resultadosReales[pid].golesVisita);
+                       let prGL = Number(pr.golesLocal);
+                       let prGV = Number(pr.golesVisita);
+                       
+                       // LÓGICA DE PUNTUACIÓN DINÁMICA LEYENDO EXCEL
+                       if (prGL === realGL && prGV === realGV) {
+                          ptsTotales += reglas.exacto; 
+                          exactos++;
+                       } else if ((realGL - realGV) === (prGL - prGV)) {
+                          ptsTotales += reglas.diferencia; 
+                       } else if ((realGL > realGV && prGL > prGV) || (realGL < realGV && prGL < prGV) || (realGL === realGV && prGL === prGV)) {
+                          ptsTotales += reglas.ganador; 
+                          ganadores++;
+                       }
+                    }
+                 });
+                 promesasUpdate.push(updateDoc(doc(db, "usuarios", uid), {
+                    puntos: ptsTotales,
+                    exactos: exactos,
+                    aciertosGanador: ganadores
+                 }));
+              }
           }
           
           await Promise.all(promesasUpdate);
-          Swal.fire('¡Éxito Total!', 'Resultados reales subidos y puntajes actualizados en la Nube.', 'success');
+          Swal.fire('¡Éxito Total!', 'Sistema actualizado. La web ahora tiene el diseño y los puntos de tu Excel.', 'success');
           
        } catch(err) {
           Swal.fire('Error', err.message, 'error');
