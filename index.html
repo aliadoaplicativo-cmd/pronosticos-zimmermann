@@ -12,7 +12,7 @@
       --main-text: #ffffff;
     }
     body { background-color: #f4f6f9; overflow-x: hidden; width: 100%; }
-    /* El header ahora usa las variables que leerá de Firebase */
+    
     .header-app { background: var(--main-bg) !important; color: var(--main-text) !important; padding: 2rem 0; transition: all 0.3s; }
     
     .top-banner { background-color: #ffffff; padding: 15px 0; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05); position: relative; z-index: 10; border-bottom: 3px solid #d4ff00; }
@@ -149,7 +149,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
     import { getFirestore, doc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
     
-    // Tus llaves de Firebase (Zimmermann)
+    // Tus llaves de Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyD8QLVq_pTww6MIY-MNZtADWRHgR6S3Ixw",
       authDomain: "pronosticos-zimmermann.firebaseapp.com",
@@ -172,17 +172,14 @@
     // 1. Cargar configuración maestra y jornadas
     window.onload = async function() {
       try {
-        // A. Cargar la configuración de Firebase
         const configSnap = await getDoc(doc(db, "configuracion", "reglas"));
         if(configSnap.exists()) {
            window.reglas = configSnap.data();
            
-           // Aplicar colores y titulo a la web
            document.documentElement.style.setProperty('--main-bg', window.reglas.colorFondo);
            document.documentElement.style.setProperty('--main-text', window.reglas.colorTexto);
            document.getElementById('tituloApp').innerText = "🏆 " + window.reglas.titulo;
            
-           // Actualizar texto de las tarjetas del modal
            document.getElementById('labelExactos').innerHTML = `Exacto<br>(${window.reglas.exacto} pts)`;
            document.getElementById('labelDiferencia').innerHTML = `Difer.<br>(${window.reglas.diferencia} pts)`;
            document.getElementById('labelGanador').innerHTML = `Ganador<br>(${window.reglas.ganador} pts)`;
@@ -190,7 +187,6 @@
            document.getElementById('tituloApp').innerText = "🏆 " + window.reglas.titulo;
         }
 
-        // B. Cargar los partidos y fechas
         const querySnapshot = await getDocs(collection(db, "partidos"));
         let jornadasSet = new Set();
         querySnapshot.forEach((docSnap) => {
@@ -214,7 +210,7 @@
       }
     };
     
-    // 2. Pintar la tabla principal (Cálculo Dinámico)
+    // 2. Pintar la tabla principal
     window.cargarTabla = async function() {
       let jor = document.getElementById('filtroJornada').value;
       let tip = document.getElementById('filtroTipo').value;
@@ -244,7 +240,6 @@
                        let realGL = Number(p.golesLocalReal);
                        let realGV = Number(p.golesVisitaReal);
                        
-                       // LÓGICA DINÁMICA DE PUNTAJE LEYENDO FIREBASE/EXCEL
                        if (prGL === realGL && prGV === realGV) {
                            ptsCalculados += window.reglas.exacto;
                        } else if ((realGL - realGV) === (prGL - prGV)) {
@@ -318,13 +313,12 @@
                 let prGL = Number(pr.golesLocal);
                 let prGV = Number(pr.golesVisita);
                 let ptoUI = '⏳';
+                let ptsCalculados = 0; // CORRECCIÓN: Esta variable ahora existe siempre
                 
                 if (p.estado === "Finalizado") {
                     let realGL = Number(p.golesLocalReal);
                     let realGV = Number(p.golesVisitaReal);
-                    let ptsCalculados = 0;
                     
-                    // LÓGICA DINÁMICA DE PUNTAJE LEYENDO FIREBASE/EXCEL
                     if (prGL === realGL && prGV === realGV) {
                         ptsCalculados = window.reglas.exacto;
                         calcExactos++;
@@ -371,6 +365,7 @@
               else if (h.valorCalc === window.reglas.diferencia) badgeColor = "bg-info text-dark"; 
               else if (h.valorCalc === window.reglas.ganador) badgeColor = "bg-warning text-dark";
               else if (h.valorCalc === -1) badgeColor = "bg-light text-dark border"; 
+              
               html += `<tr>
                          <td class="text-start"><small class="text-muted d-block fw-bold mb-1" style="font-size:0.75rem;">${h.jornada}</small><strong class="text-dark" style="font-size:0.9rem;">${h.partido}</strong></td>
                          <td class="fw-bold bg-light" style="font-size:1.1rem;">${h.pronostico}</td>
@@ -381,7 +376,7 @@
         }
         tbody.innerHTML = html;
       } catch (error) {
-        document.getElementById('loaderModal').innerHTML = `<div class="alert alert-danger">Error al cargar datos.</div>`;
+        document.getElementById('loaderModal').innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
       }
     };
   </script>
