@@ -61,10 +61,10 @@
       </div>
       <div class="col-md-12">
         <div class="admin-card border-primary">
-          <h5 class="text-primary fw-bold mb-3">4. Calcular Puntajes</h5>
-          <p class="text-muted small">Haz clic aquí después de llenar los resultados reales en Excel. Este botón calculará los puntos de todos los usuarios en Firebase y actualizará el diseño de la web.</p>
+          <h5 class="text-primary fw-bold mb-3">4. Calcular Puntajes y Empacar Tabla</h5>
+          <p class="text-muted small">Haz clic aquí después de llenar los resultados reales en Excel. Este botón calculará los puntos de todos los usuarios y generará un archivo ultrarrápido para que 2000+ personas puedan ver la tabla en vivo sin consumir tu plan de datos.</p>
           <button class="btn btn-primary w-100 fw-bold shadow-sm py-2" onclick="calcularPuntosFirebase()">
-            🏆 Calcular Puntos y Actualizar Tabla
+            🏆 Calcular Puntos y Actualizar Tabla Pública
           </button>
         </div>
       </div>
@@ -96,10 +96,9 @@
     
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-    
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw6Fs5PRrokvqn69DS1PVFP0ADD8PbDDjeJu6zYuai9Pc_Rl7wdFeFiTk8ZEZr462vopA/exec";
-    
     let globalPass = "";
+
     async function callAPI(accion, params = {}) {
       const res = await fetch(SCRIPT_URL, {
         method: 'POST', redirect: 'follow',
@@ -138,22 +137,13 @@
       try {
         let vipId = "VIP_" + Math.floor(1000 + Math.random() * 9000);
         await setDoc(doc(db, "usuarios", vipId), {
-          id: vipId,
-          nombre: n,
-          nick: n,
-          clave: c,
-          rol: "VIP",
-          puntos: 0,
-          exactos: 0,
-          aciertosGanador: 0
+          id: vipId, nombre: n, nick: n, clave: c, rol: "VIP", puntos: 0, exactos: 0, aciertosGanador: 0
         });
         await callAPI("registrarParticipanteAPI", {password: globalPass, nombre: n, clave: c, tipo: "VIP"});
         document.getElementById('nuevoNombre').value = "";
         document.getElementById('nuevaClave').value = "";
         Swal.fire({ icon: 'success', title: '¡VIP Creado!', text: `${n} ya puede ingresar en vip.html`, timer: 2000, showConfirmButton: false });
-      } catch (err) {
-        Swal.fire('Error', err.message, 'error');
-      }
+      } catch (err) { Swal.fire('Error', err.message, 'error'); }
     };
 
     window.establecerCierre = async () => {
@@ -166,9 +156,7 @@
         let res = await callAPI("guardarCierreAPI", {password: globalPass, jornada: j, fecha: f});
         await setDoc(doc(db, "cierres", j), { jornada: j, fechaLimite: f });
         Swal.fire({ icon: 'success', title: '¡Cierre Programado!', text: `${res} (Sincronizado en la Nube)`, timer: 2200, showConfirmButton: false });
-      } catch (err) {
-        Swal.fire('Error', err.message, 'error');
-      }
+      } catch (err) { Swal.fire('Error', err.message, 'error'); }
     };
 
     window.sincronizarPartidos = async () => {
@@ -181,11 +169,7 @@
         const promesas = partidos.map(p => {
           const docRef = doc(db, "partidos", String(p.id).trim());
           return setDoc(docRef, { 
-            id: String(p.id).trim(), 
-            jornada: p.jornada, 
-            local: p.local, 
-            visita: p.visita, 
-            bloqueado: p.bloqueado 
+            id: String(p.id).trim(), jornada: p.jornada, local: p.local, visita: p.visita, bloqueado: p.bloqueado 
           }, { merge: true });
         });
         await Promise.all(promesas);
@@ -194,68 +178,95 @@
     };
 
     window.calcularPuntosFirebase = async () => {
-       Swal.fire({title: 'Analizando Excel...', text: 'Leyendo resultados y configuración maestra...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+       Swal.fire({title: 'Paso 1: Analizando Excel...', text: 'Leyendo resultados y configuración maestra...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
        try {
           const datosExcel = await callAPI("obtenerResultadosYReglasAPI", {password: globalPass});
           const reglas = datosExcel.reglas;
           const resultadosReales = datosExcel.resultados;
           
-          Swal.fire({title: 'Actualizando Nube...', text: 'Guardando configuración, resultados y calculando puntajes...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+          Swal.fire({title: 'Paso 2: Generando Tabla Rápida...', text: 'Calculando puntos y empacando el archivo para 2000+ usuarios...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
           let promesasUpdate = [];
           
-          // Eliminamos la propiedad de diferencia para no guardarla en Firebase
           if (reglas.diferencia !== undefined) delete reglas.diferencia;
-          
           promesasUpdate.push(setDoc(doc(db, "configuracion", "reglas"), reglas));
           
           for (let pid in resultadosReales) {
              let cleanId = String(pid).trim();
              promesasUpdate.push(setDoc(doc(db, "partidos", cleanId), {
-                id: cleanId,
-                golesLocalReal: Number(resultadosReales[pid].golesLocal),
-                golesVisitaReal: Number(resultadosReales[pid].golesVisita),
-                estado: "Finalizado",
-                bloqueado: true
+                id: cleanId, golesLocalReal: Number(resultadosReales[pid].golesLocal), golesVisitaReal: Number(resultadosReales[pid].golesVisita),
+                estado: "Finalizado", bloqueado: true
              }, { merge: true }));
           }
           
+          // PREPARAR DATOS DE PARTIDOS PARA SABER LA JORNADA DE CADA UNO
+          const partidosSnap = await getDocs(collection(db, "partidos"));
+          let partidosMeta = {};
+          let jornadasUnicas = new Set();
+          partidosSnap.forEach(d => {
+             let p = d.data();
+             partidosMeta[p.id] = p;
+             if(p.jornada) jornadasUnicas.add(p.jornada);
+          });
+          let arrayJornadas = Array.from(jornadasUnicas);
+
+          const usuariosSnap = await getDocs(collection(db, "usuarios"));
+          let rankingTodas = [];
+          let rankingPorJornada = {};
+          arrayJornadas.forEach(j => rankingPorJornada[j] = []);
+          
           if(Object.keys(resultadosReales).length > 0) {
-              const usuariosSnap = await getDocs(collection(db, "usuarios"));
               for(let userDoc of usuariosSnap.docs) {
                  let uid = userDoc.id;
+                 let uData = userDoc.data();
                  let ptsTotales = 0; let exactos = 0; let ganadores = 0;
+                 let ptsJor = {};
+                 
                  const pronosSnap = await getDocs(collection(db, "usuarios", uid, "pronosticos"));
                  
                  pronosSnap.forEach(prDoc => {
                     let pr = prDoc.data();
                     let pid = String(pr.partidoId).trim();
+                    let pMeta = partidosMeta[pid];
                     
-                    if(resultadosReales[pid]) {
+                    if(resultadosReales[pid] && pMeta) {
                        let realGL = Number(resultadosReales[pid].golesLocal);
                        let realGV = Number(resultadosReales[pid].golesVisita);
                        let prGL = Number(pr.golesLocal);
                        let prGV = Number(pr.golesVisita);
+                       let ptsCalculados = 0;
                        
-                       // LÓGICA REVERTIDA: SOLO EXACTO Y GANADOR
                        if (prGL === realGL && prGV === realGV) {
-                          ptsTotales += reglas.exacto; 
-                          exactos++;
+                          ptsCalculados = reglas.exacto; exactos++;
                        } else if ((realGL > realGV && prGL > prGV) || (realGL < realGV && prGL < prGV) || (realGL === realGV && prGL === prGV)) {
-                          ptsTotales += reglas.ganador; 
-                          ganadores++;
+                          ptsCalculados = reglas.ganador; ganadores++;
                        }
+                       ptsTotales += ptsCalculados;
+                       if(!ptsJor[pMeta.jornada]) ptsJor[pMeta.jornada] = 0;
+                       ptsJor[pMeta.jornada] += ptsCalculados;
                     }
                  });
-                 promesasUpdate.push(updateDoc(doc(db, "usuarios", uid), {
-                    puntos: ptsTotales,
-                    exactos: exactos,
-                    aciertosGanador: ganadores
-                 }));
+                 
+                 promesasUpdate.push(updateDoc(doc(db, "usuarios", uid), { puntos: ptsTotales, exactos: exactos, aciertosGanador: ganadores }));
+                 
+                 // EMPAQUETADO DE LA TABLA
+                 let nombreU = uData.nombre || uData.nick || "Usuario";
+                 let rolU = uData.rol || "Público";
+                 
+                 rankingTodas.push({ id: uid, nombre: nombreU, puntos: ptsTotales, tipo: rolU });
+                 arrayJornadas.forEach(j => {
+                    rankingPorJornada[j].push({ id: uid, nombre: nombreU, puntos: ptsJor[j] || 0, tipo: rolU });
+                 });
               }
           }
           
+          // GUARDAR LAS TABLAS YA ORDENADAS (Esto es lo que leerá el público gastando solo 1 consulta)
+          promesasUpdate.push(setDoc(doc(db, "clasificacion", "Todas"), { data: rankingTodas }));
+          arrayJornadas.forEach(j => {
+             promesasUpdate.push(setDoc(doc(db, "clasificacion", j), { data: rankingPorJornada[j] }));
+          });
+          
           await Promise.all(promesasUpdate);
-          Swal.fire('¡Éxito Total!', 'Sistema actualizado a regla estricta (Exacto y Ganador).', 'success');
+          Swal.fire('¡Éxito Total!', 'La tabla ultra rápida ha sido generada y publicada.', 'success');
           
        } catch(err) {
           Swal.fire('Error', err.message, 'error');
