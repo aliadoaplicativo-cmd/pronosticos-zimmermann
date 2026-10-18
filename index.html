@@ -6,10 +6,7 @@
   <title>Clasificación | Pronósticos</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
-    :root {
-      --main-bg: #d32f2f;
-      --main-text: #ffffff;
-    }
+    :root { --main-bg: #d32f2f; --main-text: #ffffff; }
     body { background-color: #f4f6f9; overflow-x: hidden; width: 100%; }
     .header-app { background: var(--main-bg) !important; color: var(--main-text) !important; padding: 2rem 0; transition: all 0.3s; }
     .top-banner { background-color: #ffffff; padding: 15px 0; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05); position: relative; z-index: 10; border-bottom: 3px solid #d4ff00; }
@@ -74,7 +71,6 @@
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body bg-light p-4">
-          
           <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
             <h3 class="m-0 fw-bold text-dark" id="dashNombre">Participante</h3>
             <select id="filtroModal" class="form-select w-auto border-primary fw-bold shadow-sm" onchange="cargarDashboard()">
@@ -85,8 +81,6 @@
           <div id="loaderModal" class="text-center my-5"><div class="spinner-border text-primary"></div></div>
          
           <div id="dashboardContent" class="d-none">
-            
-            <!-- TARJETAS DE ESTADÍSTICAS DINÁMICAS (AHORA SON 3) -->
             <div class="row g-2 mb-4">
               <div class="col-4">
                 <div class="stat-card bg-success text-white shadow-sm">
@@ -125,10 +119,7 @@
   
   <footer class="footer-empresa text-center">
     <p class="mb-2 text-muted fw-bold" style="font-size: 0.85rem;">Desarrollado por:</p>
-    <img src="logo2.png" alt="Zimmermann" class="footer-logo d-block mx-auto mb-2">
-    <a href="https://wa.me/51993801594" target="_blank" class="text-decoration-none fw-bold d-inline-block mt-1" style="color: #25D366; font-size: 0.95rem;">
-      💬 WhatsApp: +51 993 801 594
-    </a>
+    <img src="logo2.png" alt="Aliado" class="footer-logo d-block mx-auto mb-2">
   </footer>
   
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -152,8 +143,6 @@
     
     let todosLosPartidos = [];
     window.currentPartId = null;
-    
-    // Reglas sin diferencia
     window.reglas = { exacto: 3, ganador: 1, titulo: "Liga de Pronósticos", colorFondo: "#d32f2f", colorTexto: "#ffffff" };
 
     window.onload = async function() {
@@ -193,7 +182,6 @@
         
         window.cargarTabla();
       } catch (e) {
-        console.error("Error", e);
         document.getElementById('tituloApp').innerText = "🏆 Liga de Pronósticos";
       }
     };
@@ -206,65 +194,47 @@
       document.getElementById('tablaPosiciones').classList.add('d-none');
       
       try {
-        const usuariosSnap = await getDocs(collection(db, "usuarios"));
+        // LA MAGIA: Lectura Única del archivo pre-armado
+        const rankingSnap = await getDoc(doc(db, "clasificacion", jor));
         let data = [];
         
-        for (let docSnap of usuariosSnap.docs) {
-           let u = docSnap.data();
-           
-           if(tip === "Todos" || u.rol === tip || (tip==="Público" && u.rol!=="VIP")) {
-               
-               const pronosSnap = await getDocs(collection(db, "usuarios", u.id, "pronosticos"));
-               let ptsCalculados = 0;
-               
-               pronosSnap.forEach(prDoc => {
-                   let pr = prDoc.data();
-                   let p = todosLosPartidos.find(part => part.id === pr.partidoId);
-                   
-                   if (p && p.estado === "Finalizado" && (jor === "Todas" || p.jornada === jor)) {
-                       let prGL = Number(pr.golesLocal);
-                       let prGV = Number(pr.golesVisita);
-                       let realGL = Number(p.golesLocalReal);
-                       let realGV = Number(p.golesVisitaReal);
-                       
-                       // LÓGICA REVERTIDA: SOLO EXACTO Y GANADOR
-                       if (prGL === realGL && prGV === realGV) {
-                           ptsCalculados += window.reglas.exacto;
-                       } else if ((realGL > realGV && prGL > prGV) || (realGL < realGV && prGL < prGV) || (realGL === realGV && prGL === prGV)) {
-                           ptsCalculados += window.reglas.ganador;
-                       }
-                   }
-               });
-               
-               data.push({
-                   id: u.id,
-                   nombre: u.nombre || u.nick,
-                   puntos: ptsCalculados,
-                   tipo: u.rol || "Público"
-               });
-           }
+        if (rankingSnap.exists()) {
+           let listaPrecalculada = rankingSnap.data().data || [];
+           data = listaPrecalculada.filter(u => {
+               if (tip === "Todos") return true;
+               if (tip === "Público" && u.tipo !== "VIP") return true;
+               if (u.tipo === tip) return true;
+               return false;
+           });
+        } else {
+           console.log("No hay tabla generada para: " + jor);
         }
         
         data.sort((a, b) => b.puntos - a.puntos);
         data.forEach((row, index) => row.rank = index + 1);
+        
         document.getElementById('loader').classList.add('d-none');
         document.getElementById('tablaPosiciones').classList.remove('d-none');
         let tbody = document.getElementById('tbodyPosiciones');
         let html = '';
         
-        data.forEach(row => {
-          let medalla = row.rank === 1 ? '🥇' : row.rank === 2 ? '🥈' : row.rank === 3 ? '🥉' : `<span class="fw-bold text-muted">${row.rank}</span>`;
-          let badge = row.tipo === "VIP" ? '<span class="vip-badge shadow-sm">VIP</span>' : '';
-         
-          html += `<tr class="clickable-row" onclick="abrirDashboard('${row.id}','${row.nombre}')">
-                     <td class="text-center">${medalla}</td>
-                     <td class="fw-bold text-dark">${row.nombre} ${badge} <br><small class="text-primary" style="font-size:0.75em;">🔍 Ver más</small></td>
-                     <td class="text-center fw-bold text-primary fs-4">${row.puntos}</td>
-                   </tr>`;
-        });
+        if(data.length === 0) {
+           html = '<tr><td colspan="3" class="text-center py-4 text-muted">Aún no hay puntuaciones generadas. El administrador debe actualizar la tabla.</td></tr>';
+        } else {
+            data.forEach(row => {
+              let medalla = row.rank === 1 ? '🥇' : row.rank === 2 ? '🥈' : row.rank === 3 ? '🥉' : `<span class="fw-bold text-muted">${row.rank}</span>`;
+              let badge = row.tipo === "VIP" ? '<span class="vip-badge shadow-sm">VIP</span>' : '';
+             
+              html += `<tr class="clickable-row" onclick="abrirDashboard('${row.id}','${row.nombre}')">
+                         <td class="text-center">${medalla}</td>
+                         <td class="fw-bold text-dark">${row.nombre} ${badge} <br><small class="text-primary" style="font-size:0.75em;">🔍 Ver más</small></td>
+                         <td class="text-center fw-bold text-primary fs-4">${row.puntos}</td>
+                       </tr>`;
+            });
+        }
         tbody.innerHTML = html;
       } catch (e) {
-        document.getElementById('loader').innerHTML = `<div class="alert alert-danger">Error al cargar datos.</div>`;
+        document.getElementById('loader').innerHTML = `<div class="alert alert-danger">Error al cargar la tabla pre-calculada.</div>`;
       }
     };
 
@@ -277,6 +247,7 @@
       window.cargarDashboard();
     };
     
+    // El desglose detallado sigue igual (solo lee los datos de UNA persona al hacerle clic, lo cual consume poquísimo)
     window.cargarDashboard = async function() {
       let filtro = document.getElementById('filtroModal').value;
       document.getElementById('loaderModal').classList.remove('d-none');
@@ -285,7 +256,6 @@
       try {
         const pronosSnap = await getDocs(collection(db, "usuarios", window.currentPartId, "pronosticos"));
         let historial = [];
-        
         let calcPuntos = 0, calcExactos = 0, calcTendencia = 0;
         
         pronosSnap.forEach(prDoc => {
@@ -311,7 +281,6 @@
                         ptsCalculados = window.reglas.ganador;
                         calcTendencia++;
                     }
-                    
                     calcPuntos += ptsCalculados;
                     ptoUI = ptsCalculados > 0 ? `+${ptsCalculados}` : "0";
                 }
